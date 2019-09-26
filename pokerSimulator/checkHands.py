@@ -39,15 +39,28 @@ class royal_flush(hand):
         super().__init__(cards)
         self.name = 'Royal Flush'
         self.score = 10
-        self._check_hand()
-        
+
     def _check_hand(self):
         if not (self._is_a_straight() and self._is_flush() and self.mostCommonCards[0][0] == 14):
-           raise WrongHandError('Not a Royal Flush')
+           return False
+        return True
         
     def __eq__(self):
         return True
         
+class strait_flush(hand):
+    def __init__(self,cards):
+        super().__init__(cards)
+        self.name = 'Strait Flush'
+        self.score = 9
+        
+    def _check_hand(self):
+        if not (self._is_a_straight() and self._is_flush()):
+           return False
+        return True        
+    def __eq__(self):
+        return True
+    
 class four_of_a_kind(hand):
     def __init__(self,cards):
         super().__init__(cards)
@@ -60,17 +73,19 @@ class four_of_a_kind(hand):
         if self.mostCommonCards[0][1] == 4:
             return self.mostCommonCards[0][0]
         else:
-            raise WrongHandError('Not a 4 of a kind')
+            return False
 
     def getKicker(self):
         if self.mostCommonCards[1][1] == 1:
             return self.mostCommonCards[1][0]
         else:
-            raise ValueError('Not a 4 of a kind')
+            return False
 
     def _check_hand(self):
-        pass
-            
+        if not (( len(self.mostCommonCards) == 2) and self.mostCommonCards[0][1] == 4 and self.mostCommonCards[1][1] == 1):
+            return False
+        return True
+    
     def __eq__(self,other):
         return self.four == other.four and self.kicker == other.kicker
     
@@ -83,17 +98,68 @@ class four_of_a_kind(hand):
             if self.kicker < other.kicker:
                 return True
         return False
+    
+class fullHouse(hand):
+    def __init__(self,cards):
+        super().__init__(cards)
+        self.name = 'Full House'
+        self.score = 7
+        
+    def _check_hand(self):
+        if not (( len(self.mostCommonCards) == 2) and self.mostCommonCards[0][1] == 3 and self.mostCommonCards[1][1] == 2):
+            return False
+        return True
+    
+class flush(hand):
+    def __init__(self,cards):
+        super().__init__(cards)
+        self.name = 'Flush'
+        self.score = 6
+        
+    def _check_hand(self):
+        if not self._is_flush():
+            return False
+        return True
+    
+class straight(hand):
+    def __init__(self,cards):
+        super().__init__(cards)
+        self.name = 'Straight'
+        self.score = 5
+        
+    def _check_hand(self):
+        if not self._is_a_straight():
+            return False
+        return True
 
 class threeOfAKind(hand):
     def __init__(self,cards):
         super().__init__(cards)
-        
-        self._check_hand()
+        self.name = 'Three of a Kind'
+        self.score = 4
+        self.three = self.mostCommonCards[0][0]
+        self.high1 = self.mostCommonCards[1][0]
+        self.high2 = self.mostCommonCards[2][0]
         
     def _check_hand(self):
-        if not self.uniqueCardCount == 3 and self.mostCommonCards[0][1] == 3:
-            raise WrongHandError('Not a three of a kind')
-
+        if not (self.uniqueCardCount == 3 and self.mostCommonCards[0][1] == 3):
+            return False
+        return True
+    
+    def __eq__(self,other):
+        return self.three == other.three and self.high1 == other.high1 and self.high2 == other.high2
+    
+    def __lt__(self,other):
+        if self.three == other.three:
+            if self.high1 == other.high1:
+                if self.high2 < other.high2:
+                    return True
+            elif self.high1 < other.high1:
+                return True
+        elif self.three < other.three:
+            return True
+        return False
+    
 class twoPair(hand):
     def __init__(self,cards):
         super().__init__(cards)
@@ -110,7 +176,9 @@ class twoPair(hand):
             return WrongHandError('Not a pair')
         
     def _check_hand(self):
-        pass
+        if not (( len(self.mostCommonCards) == 3) and self.mostCommonCards[0][1] == 2 and self.mostCommonCards[1][1] == 2):
+            return False
+        return True
         
     def __eq__(self,other):
         return self.pair1 == other.pair1 and self.pair2 == other.pair2 and self.kicker == other.kicker
@@ -141,8 +209,9 @@ class pair(hand):
         return self.mostCommonCards[loc][0]
 
     def _check_hand(self):
-        if (not len(self.mostCommonCards) == 4) and self.mostCommonCards[0][1] == 2:
-            raise WrongHandError('Not a single pair')          
+        if not(len(self.mostCommonCards) == 4 and self.mostCommonCards[0][1] == 2):
+            return False
+        return True
             
     def __eq__(self,other):
         return self.pair == other.pair and self.kicker1 == other.kicker1 and self.kicker2 == other.kicker2 and self.kicker3 == other.kicker3
@@ -160,34 +229,34 @@ class pair(hand):
         return False
 
 class highCard(hand):
-        def __init__(self,cards):
-            super().__init__(cards)
-            self.name = 'High Card'
-            print(self.uniqueCardCount)
-            self._check_hand()
-            self.score = 1
-            self.highCard = self.mostCommonCards[0][0]
-            
-        def _check_hand(self):
-            if self.uniqueCardCount < 5 or self._is_a_straight() or self._is_flush():
-                raise WrongHandError('Not a high card')
+    def __init__(self,cards):
+        super().__init__(cards)
+        self.name = 'High Card'
+        self._check_hand()
+        self.score = 1
+        self.highCard = self.mostCommonCards[0][0]
         
-        def __eq__(self,other):
-            return self.mostCommonCards == other.mostCommonCards
-                
-        def __lt__(self,other):
-            if self.mostCommonCards[0][0] < other.mostCommonCards[0][0]:
-                return True
-            elif self.mostCommonCards[0][0] == other.mostCommonCards[0][0]:
-                if self.mostCommonCards[1][0] < other.mostCommonCards[1][0]:
-                    return True
-                elif self.mostCommonCards[1][0] == other.mostCommonCards[1][0]:
-                    if self.mostCommonCards[2][0] < other.mostCommonCards[2][0]:
-                        return True
-                    elif self.mostCommonCards[2][0] == other.mostCommonCards[2][0]:
-                        if self.mostCommonCards[3][0] < other.mostCommonCards[3][0]:
-                            return True
+    def _check_hand(self):
+        if self.uniqueCardCount < 5 or self._is_a_straight() or self._is_flush():
             return False
+        return True
+    
+    def __eq__(self,other):
+        return self.mostCommonCards == other.mostCommonCards
+            
+    def __lt__(self,other):
+        if self.mostCommonCards[0][0] < other.mostCommonCards[0][0]:
+            return True
+        elif self.mostCommonCards[0][0] == other.mostCommonCards[0][0]:
+            if self.mostCommonCards[1][0] < other.mostCommonCards[1][0]:
+                return True
+            elif self.mostCommonCards[1][0] == other.mostCommonCards[1][0]:
+                if self.mostCommonCards[2][0] < other.mostCommonCards[2][0]:
+                    return True
+                elif self.mostCommonCards[2][0] == other.mostCommonCards[2][0]:
+                    if self.mostCommonCards[3][0] < other.mostCommonCards[3][0]:
+                        return True
+        return False
         
 
 
