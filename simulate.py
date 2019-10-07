@@ -1,57 +1,107 @@
 # -*- coding: utf-8 -*-
 
-from pokerSimulator import Card, Deck, Player
-from pokerSimulator.checkHands import highCard, pair, twoPair, threeOfAKind, straight, flush, fullHouse, four_of_a_kind, strait_flush, royal_flush,get_card_value_count,WrongHandError
-from itertools import combinations
+from pokertraining import Deck, Player, Table
+from pokertraining.checkHands import getBestHand
+from collections import Counter
+import time
+import uuid
 
-d = Deck()
-d.shuffle()
+def outsideStraightDraw(cards):
+    outsideDraw = 0
+    insideStraightDraw = 0
+    doubleInsideStraitDraw = 0
+    cards = sorted(cards,reverse=True)
+    values = [card.value for card in cards] 
+    valMath = [0]*(len(values)-1)
 
-p1 = Player('p1')
-
-rf = [Card('Clubs',10),Card('Clubs',11),Card('Clubs',12),Card('Clubs',13),Card('Clubs',14)]
-sf = [Card('Clubs',10),Card('Clubs',11),Card('Clubs',12),Card('Clubs',13),Card('Clubs',9)]
-foak = [Card('Hearts',5),Card('Clubs',5),Card('Spades',5),Card('Diamonds',5),Card('Hearts',3)]
-fh = [Card('Hearts',5),Card('Clubs',5),Card('Spades',5),Card('Diamonds',1),Card('Hearts',1)]
-flsh = [Card('Clubs',2),Card('Clubs',5),Card('Clubs',12),Card('Clubs',13),Card('Clubs',9)]
-strt = [Card('Hearts',10),Card('Diamonds',11),Card('Clubs',12),Card('Clubs',13),Card('Clubs',9)]
-strtLow = [Card('Hearts',4),Card('Clubs',2),Card('Spades',14),Card('Diamonds',5),Card('Hearts',3)]
-toak = [Card('Hearts',5),Card('Clubs',5),Card('Spades',5),Card('Diamonds',1),Card('Hearts',3)]
-tp = [Card('Hearts',4),Card('Clubs',4),Card('Spades',3),Card('Diamonds',3),Card('Hearts',5)]
-p = [Card('Hearts',4),Card('Clubs',4),Card('Spades',3),Card('Diamonds',2),Card('Hearts',5)]
-hc = [Card('Hearts',4),Card('Clubs',2),Card('Spades',13),Card('Diamonds',5),Card('Hearts',3)]
-
-
-hand = royal_flush(rf)
-hand._check_hand()
+    # get distance between cards
+    for i,val in enumerate(values):
+        if i == 4: break
+        valMath[i] = values[i]-values[i+1]
     
-handCheckOrder = [royal_flush, strait_flush, four_of_a_kind, fullHouse, flush, straight, threeOfAKind, twoPair, pair, highCard]
-highestHand = ()
-
-
-hand = [d.drawCard() for _ in range(7)]
-allPossibleHands = combinations(hand,5)
-
-highestHand = []
-for hand in allPossibleHands:
+    # check if outside draw exists
+    if not valMath == [1,1,1,1]:
+        if ((valMath[1:] == [1,1,1]) and values[1] >= 2 and values[3] <= 13 ) or\
+            ((valMath[:3] == [1,1,1]) and values[0] >= 2 and values[2] <= 13): 
+            outsideDraw = 1
     
-    for checkHand in handCheckOrder:
-        handType = checkHand(hand)
-        if handType._check_hand():
-            break
+    # check if double inside strait draw exists
+    # 2,1,1,2 is normal, 7,2,1,1 show a,3,4,5,7 draw
+    if valMath == [2,1,1,2] or valMath == [7,2,1,1]:
+        doubleInsideStraitDraw = 1
+    
+    # TODO design inside straight draw
+    # Check for inside straight draw
+    # if draw is a,2,3,4
+    # ace to 5 inside straight draws
+    a5draws = [[14,5,4,3],[14,5,3,2],[14,4,3,2],[14,5,4,2]]
+    if ([values[0]]+values[2:] in a5draws) and (not values[1] == 5): insideStraightDraw = 1
+    if values[:4] == [14,13,12,11]: insideStraightDraw = 1
         
-    highestHand.append([handType.score,handType.cards])
-
-print(sorted(highestHand,key=lambda x: -x[0])[:1])
-
-toak = [Card('Hearts',5),Card('Clubs',5),Card('Spades',5),Card('Diamonds',1),Card('Hearts',3)]
-toak2 = [Card('Hearts',5),Card('Clubs',5),Card('Spades',5),Card('Diamonds',2),Card('Hearts',3)]
+    return [outsideDraw,doubleInsideStraitDraw,insideStraightDraw]
 
 
-fh1 = threeOfAKind(toak)
-fh2 = threeOfAKind(toak2)
-print(fh1.three,fh2.three)
-print(fh1.high1,fh2.high1)
-print(fh1.high2,fh2.high2)
+tbl = Table(seats=9)
+for p in range(9):
+    tbl.addPlayer(Player(f'{p}'))
 
-print(sorted([fh1.cards,fh2.cards],reverse=True))
+handID = uuid.uuid4().hex
+
+tbl.getDeckAndShuffle()
+tbl.dealHoleCards()
+
+tbl.burnCard()
+tbl.dealCommunityCards('flop')
+tbl.getBestHands('flop')
+
+tbl.burnCard()
+tbl.dealCommunityCards('turn')
+tbl.getBestHands('turn')
+
+tbl.burnCard()
+tbl.dealCommunityCards('river')
+tbl.getBestHands('river')
+
+tbl.getWinners()
+
+    
+print(tbl.winnerList)
+#print(tbl.playersBestHands)
+print('handId,holeCardGroup,holeCards,Flop,Turn,River,flush_draw,outside_straight_draw,double_inside_straight_draw,bestHandFlop,bestHandTurn,bestHandRiver,Win')
+for player in tbl.players:
+    flopHand = player.showHand() + tbl.flop
+    suits = Counter([card.suit for card in flopHand])
+    flushDraw = 1 if 5 not in suits.values() and 4 in suits.values() else 0
+    straightDraws = outsideStraightDraw(flopHand)
+    print(
+            ','.join([
+                handID,                    
+                str(player.holeCardsCleaned()), 
+                '|'.join(player._logHand()), 
+                '|'.join(tbl._logFlop()), 
+                tbl._logTurn(), 
+                tbl._logRiver(),
+                str(flushDraw),
+                ','.join([str(draw) for draw in straightDraws]),
+                str(player.bestHandFlop.score),
+                str(player.bestHandTurn.score),
+                str(player.bestHandRiver.score),
+                str(player.win),
+            ])
+    )
+#    for i,player in enumerate(players):
+#        if previousBest is None:
+#            winner = i
+#            previousBest = player.bestHandRiver
+#        else:
+#            best = player.bestHandRiver
+#            if best > previousBest:
+#                previousBest = best
+#                winner = i
+#                
+#    players[winner].win = 1
+#    
+#    
+#    for player in players: 
+#        with open('handLog.txt','a') as file:
+#            file.write(player.playerLog()+'\n')
