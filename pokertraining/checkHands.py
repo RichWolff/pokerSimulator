@@ -170,15 +170,16 @@ class strait_flush(hand):
         return False
     def __repr__(self):
         return f'StraightFlush({self.cards})'
-        
+
+
 class four_of_a_kind(hand):
-    def __init__(self,cards):
+    def __init__(self, cards):
         super().__init__(cards)
         self.name = 'Four of a Kind'
         self.score = 8
         self.four = self.getFour()
         self.kicker = self.getKicker()
-        
+
     def getFour(self):
         if self.mostCommonCards[0][1] == 4:
             return self.mostCommonCards[0][0]
@@ -192,16 +193,16 @@ class four_of_a_kind(hand):
             return False
 
     def _check_hand(self):
-        if not (( len(self.mostCommonCards) == 2) and self.mostCommonCards[0][1] == 4 and self.mostCommonCards[1][1] == 1):
+        if not ((len(self.mostCommonCards) == 2) and self.mostCommonCards[0][1] == 4 and self.mostCommonCards[1][1] == 1):
             return False
         return True
     
-    def __eq__(self,other):
+    def __eq__(self, other):
         if not self.score == other.score:
             return False
         return self.mostCommonCards[0][0] == other.mostCommonCards[0][0] and self.mostCommonCards[1][0] == other.mostCommonCards[1][0]
     
-    def __lt__(self,other):
+    def __lt__(self, other):
         if self.score < other.score:
             return True
         elif self.score == other.score:

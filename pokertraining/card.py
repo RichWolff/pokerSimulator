@@ -1,21 +1,27 @@
+import json
+
+
 class Card:
-    def __init__(self,suit,val):
-        
+    def __init__(self, suit, value):
         self.suit = self.checkSuit(suit)
-        self.value = self.checkValue(val)
-    
+        self.value = self.checkValue(value)
+
     @staticmethod
     def checkSuit(suit):
         if suit in ('Spades','Hearts','Clubs','Diamonds'):
             return suit
+
         raise ValueError(f'Suit {suit} not applicable')
-        
+
     @staticmethod 
     def checkValue(val):
         if val < 2 or val > 14:
             raise ValueError(f'Card {val} is not valid. Must be a numerical integer between 2 and 14)')
         return val
-    
+
+    def toJson(self):
+        return json.dumps(self, default=lambda o: o.__dict__)
+
     def show(self):
         if self.value == 11:
             val = 'J'
